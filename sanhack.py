@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 param_names = ["HHgascharge","HHsubsidy", "HHpvt", "HHCL", "HHCCO", "HHCOMRpercentage", "HHCHHR", "HHCHOR", "seedpercentage"]
 variable_names = ["HHusercharge", "noclusters","periodTRclusters","periodTCclusters","periodprofclusters","cumprofclusters","periodinvest","periodinvestval","cuminvest","cuminvval","cumprofclusterslessinv","nooperators","cumrev","cumcost","cumprof"]
 
@@ -9,7 +11,7 @@ def readparam():
 inputs = []
 for i in range(13):
     inputs.append(readparam())
-    
+
 HHpopn, HHpercluster, Kcostcluster, clustsperoperator, HHgaschargerange, HHsubsidyrange, HHpvtrange, HHCLrange,\
         HHCCOrange, HHCOMRrange, HHCHHRrange, HHCHORrange, seedrange = inputs
 
@@ -24,11 +26,11 @@ def combinations(ranges):
     return result
 
 def simulate_scenario(params, numMonths):
-    
+
 
     clusterpopn = HHpopn//HHpercluster
     capex = Kcostcluster * clusterpopn
-    
+
     HHgascharge = params[0]
     HHsubsidy = params[1]
     HHpvt = params[2]
@@ -63,7 +65,7 @@ def simulate_scenario(params, numMonths):
     cumprof = [cumrev[0]-cumcost[0]]
 
     # Second column
-       
+
     noclusters.append(int(noclusters[0] + periodinvest[0]))
     cumprofclusters[1] = cumprofclusterslessinv[0] + periodprofclusters[1]
     periodinvest.append(max([0,int(cumprofclusters[1]//Kcostcluster)]))
@@ -74,7 +76,7 @@ def simulate_scenario(params, numMonths):
     cumrev[1] = cumrev[0] + periodTRclusters[1]
     cumcost[1] = cumcost[0] + periodTCclusters[1]
     cumprof.append(cumrev[1]-cumcost[1])
-    
+
     for month in range(2,numMonths):
         noclusters.append(int(noclusters[month-1] + periodinvest[month-1]))
         periodTRclusters.append(noclusters[month] * HHTR * HHpercluster)
@@ -106,23 +108,23 @@ def simulate_all(ranges, numMonths):
         for j in range(len(ranges[i])):
             param_freq.append([0])
         frequencies.append(param_freq)
-    
+
     for params in combinations(ranges):
         scenario = simulate_scenario(params, numMonths)
-        
+
         for i in range(len(param_names)):
             n = scenario[1][-1]
             param_val_ind = ranges[i].index(params[i])
             if n>=len(frequencies[i][param_val_ind]):
                 frequencies[i][param_val_ind].extend([0]*(n - len(frequencies[i][param_val_ind])+1))
             frequencies[i][param_val_ind][n] += 1
-        
+
         print('Scenario_id:, ' + str(scenario_id) + '\n' + print_simulation(params, scenario), end='\n', file=datafile)
 
         scenario_id += 1
 
     statsfile = open('statsfile.csv', mode='w')
-    
+
     for i in range(len(param_names)):
         print('\n%s, Number scaled, Mean' %param_names[i], file = statsfile)
         for j in range(len(ranges[i])):
@@ -130,17 +132,17 @@ def simulate_all(ranges, numMonths):
 
     statsfile.close()
     datafile.close()
-    
+
 def print_simulation(params, scenario):
     out = ''
 
     params[5]*=100
     params[8]*=100
-    
+
     i=0
     arr = params+scenario
     numMonths = len(scenario[1])
-    
+
     for var in (param_names + variable_names):
         out += var + ':,'
         val = arr[i]
@@ -149,7 +151,7 @@ def print_simulation(params, scenario):
             valstring = str(list(map((lambda x: round(x,1)),val)))[1:-1]
         else:
             valstring = ((str(round(val, 2))+', ')*numMonths)[:-2]
-        
+
         out += valstring + '\n'
 
     return out
